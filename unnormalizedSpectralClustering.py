@@ -9,7 +9,7 @@ from scipy.sparse.linalg import eigen
 from scipy.spatial.kdtree import KDTree  
   
 
-def constructKnnGraph(points, numNeighbor, distance):
+def constructKnnGraph(points, numNeighbor):
   def euclidean_kernel(a, b):
     d = np.linalg.norm(a-b)
     return d
@@ -23,7 +23,8 @@ def constructKnnGraph(points, numNeighbor, distance):
 
 
 def constructSimilarityGraph(points):
-  graphPoints = constructKnnGraph(points, numNeighbor, distance)
+  numNeighbor = 10
+  graphPoints = constructKnnGraph(points, numNeighbor)
   return graphPoints
 
 def getWeightMatrix(graphPoints):  
@@ -52,22 +53,32 @@ def constructEigenvectorMatrix(L, numClusters):
 
 def computeClusterIndex(Y, numClusters, points):
   res, idx = kmeans2(Y, numClusters, minit='random')
-  clusterIndex = []
-  for i in range(0, len(points) + 1):
+  print idx
+  clusterIndex = [[] for x in range(numClusters)]
+  for i in range(0, len(points)):
     clusterIndex[idx[i]].append(i) 
   return clusterIndex
 
 def getClusters(points, clusterIndex):
-  clusterPoints = []
-  for i in range(0, k + 1):
-    for j in range(0, len(clusterIndex[k]))
-      clusterPoints[i].append(points[clusterIndex[j]])
+  numClusters = len(clusterIndex)
+  clusterPoints = [[] for x in range(numClusters)]
+  for i in range(0, len(clusterIndex)):
+    for j in range(0, len(clusterIndex[i])):
+      
+      clusterPoints[i].append(points[clusterIndex[i][j]])
   return clusterPoints
 
-  
+def getSamplePoints():
+  pt1 = np.random.normal(1, 0.2, (100,2))
+  pt2 = np.random.normal(2, 0.5, (300,2))
+  pt3 = np.random.normal(3, 0.3, (100,2))
+  pt2[:,0] += 1
+  pt3[:,0] -= 0.5
+  xy = np.concatenate((pt1, pt2, pt3))
+  return xy
 
 def main(args):  
-  numClusters = 10
+  numClusters = 3
   points = getSamplePoints()
   graphPoints = constructSimilarityGraph(points)
   W = getWeightMatrix(graphPoints)
@@ -76,6 +87,7 @@ def main(args):
   Y = constructEigenvectorMatrix(L, numClusters)
   clusterIndex = computeClusterIndex(Y, numClusters, points)
   clustersPoints = getClusters(points, clusterIndex)
+  
 
 if __name__ == "__main__": 
   main(sys.argv)
