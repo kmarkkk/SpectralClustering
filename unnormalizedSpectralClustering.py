@@ -7,11 +7,6 @@ from scipy.linalg import eig
 from scipy.cluster.vq import kmeans2  
 from scipy.sparse.linalg import eigen 
 from scipy.spatial.kdtree import KDTree  
-
-
-
-
-
   
 
 def constructKnnGraph(points, numNeighbor, distance):
@@ -55,10 +50,19 @@ def constructEigenvectorMatrix(L, numClusters):
   Y = np.array([edict[k] for k in evals[0:numClusters]]).transpose()
   return Y
 
-def computeClusterIndex(Y):
-  res, idx = kmeans2(Y, 3, minit='random')
-  //TODO: START FROM HERE
+def computeClusterIndex(Y, numClusters, points):
+  res, idx = kmeans2(Y, numClusters, minit='random')
+  clusterIndex = []
+  for i in range(0, len(points) + 1):
+    clusterIndex[idx[i]].append(i) 
+  return clusterIndex
 
+def getClusters(points, clusterIndex):
+  clusterPoints = []
+  for i in range(0, k + 1):
+    for j in range(0, len(clusterIndex[k]))
+      clusterPoints[i].append(points[clusterIndex[j]])
+  return clusterPoints
 
   
 
@@ -70,8 +74,8 @@ def main(args):
   D = getDegreeMatrix(W)
   L = computeLaplacian(D, W)
   Y = constructEigenvectorMatrix(L, numClusters)
-  clusterIndex = computeClusterIndex(Y)
-  clusters = getClusters(points, clusterIndex)
+  clusterIndex = computeClusterIndex(Y, numClusters, points)
+  clustersPoints = getClusters(points, clusterIndex)
 
 if __name__ == "__main__": 
   main(sys.argv)
