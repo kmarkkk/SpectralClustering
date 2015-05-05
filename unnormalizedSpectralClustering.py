@@ -3,6 +3,7 @@
 import sys
 import numpy as np  
 import matplotlib.pyplot as plt  
+from scipy.io import loadmat
 from scipy.linalg import eig  
 from scipy.cluster.vq import kmeans2  
 from scipy.sparse.linalg import eigen 
@@ -77,10 +78,21 @@ def getSamplePoints():
   xy = np.concatenate((pt1, pt2, pt3))
   return xy
 
+def getData(dir):
+  data = loadmat(dir)
+  b = np.array(data['images'])
+  return b
+
 def main(args):  
   numClusters = 3
-  points = getSamplePoints()
-  graphPoints = constructSimilarityGraph(points)
+  points = getData('images.mat') # getSamplePoints()
+  sizes = points.shape
+  new_data = []
+  for i in range(50): #(sizes[2]):
+    one_point = points[:, :, i]
+    one_point = one_point.reshape((1, 784))
+    new_data.append(one_point)
+  graphPoints = constructSimilarityGraph(new_data)
   W = getWeightMatrix(graphPoints)
   D = getDegreeMatrix(W)
   L = computeLaplacian(D, W)
