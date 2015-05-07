@@ -163,7 +163,7 @@ For the memory overhead, a lot of solutions exist to handle the memory bottlenec
 \end{enumerate}
 In our project, we chose the second solution. In theory, the smaller the $k$, the worse the result because we are throwing more info.  The $k$ in k-nn is a tunable parameter, and we picked 500 which both fitted the memory of our machine and gave a good performance. 
 
-In order to speedup the slow eigenvector decomposition, we adopted the idea from Michael Jordan’s paper (xxx) to do a downsampling at the beginning to significantly reduce the size of the affinity matrix. Basically, after choosing a sampling ratio $\alpha$, we first did a fast K-Means on the data set to find $m = \alpha n$ centroids $y_1, y_2, …., y_m$. Then, each $x_i$ will be represented by the centroid closest to it. Then we would perform the Spectral Clustering on $y_1, y_2, …., y_m$, and recover the cluster membership for each $x_i$ by looking up the cluster membership of the corresponding $y$ centroid. This optimization turned out to work well, with a little drop in accuracy because we lost some information during the downsampling. Besides that, it significantly reduced the time and memory usage of the Spectral Clustering algorithm,
+In order to speedup the slow eigenvector decomposition, we adopted the idea from Michael Jordan’s paper (xxx) to do a downsampling at the beginning to significantly reduce the size of the affinity matrix. Basically, after choosing a sampling ratio $\alpha$, we first did a fast K-Means on the data set to find $m = \alpha n$ centroids $y_1, y_2, \cdots, y_m$. Then, each $x_i$ will be represented by the centroid closest to it. Then we would perform the Spectral Clustering on $y_1, y_2, …., y_m$, and recover the cluster membership for each $x_i$ by looking up the cluster membership of the corresponding $y$ centroid. This optimization turned out to work well, with a little drop in accuracy because we lost some information during the downsampling. Besides that, it significantly reduced the time and memory usage of the Spectral Clustering algorithm,
 
 
 \section{Evaluation}
@@ -174,43 +174,75 @@ In this sector we present the dataset we tested on and the results from running 
 During evaluation, we used two data sets. One big and one small.
 \\
 
-\begin{table*}
-\centering
-\begin{tabular}{|c|ccccccc|}
-\hline
- & Basic $k$-means & KM-1 & KM-2 & BF & SC, $\alpha=1$ & SC, $\alpha=2$ & SC, $\alpha=8$ \\
- \hline
- Accuracy & 0.5399 & 0.5520 & 0.5520 & 0.5705 & 0.8031 & 0.7945 & 0.7842 \\
- Running Time & 0.94s & 14.76s & 1.67s & 2.81s & 483.28s & 187.69s & 30.23s\\
- \hline
-\end{tabular}
-\caption{Accuracy and running time of $k$-means and spectral clustering settings on Musk dataset}
-\label{table_musk}
-\end{table*}
-
-\begin{table*}
-\centering
-\begin{tabular}{|c|ccccc|}
-\hline
- & Basic $k$-means & KM-1 & KM-2 & BF & SC, $\alpha=500$ \\
- \hline
- Accuracy & 0.6325 & 0.6523 & 0.6623 & 0.6721 & 0.9170 \\
- Running Time & 10.50s & 162.93s & 20.53s & 25.32s & 141.79s\\
- \hline
-\end{tabular}
-\caption{Accuracy and running time of $k$-means and spectral clustering settings on USCI dataset}
-\label{table_usci}
-\end{table*}
-
 \subsection{Small data set}
 We used the Musk dataset from UCI, the machine learning repository. In short, it consists of different conformations from a set of 109 molecules which are either musks or non-musks. It’s a labeled dataset with 6598 instances and 166 features. Most features are “distance feature” along rays.
 The objective is to clustering all the musk conformations and all the non-musks conformations. This many-to-one relationship between feature vectors and molecules is called the "multiple instance problem", and clustering algorithm can be turned into a classifier. In this dataset, we measured the performance based on the accuracy that the algorithm correctly labeled all the points.
 \\
 
-\subsection{Big data set}
+\begin{table}
+\centering
+\begin{tabular}{|c|cc|}
+\hline
+Algorithm & Accuracy & Time \\
+\hline
+ Basic $k$-means & 0.5399 & 0.94s\\
+ KM-1 & 0.5520 & 14.76s\\
+ KM-2 & 0.5520 & 1.67s\\
+ BF & 0.5705 & 2.81s\\
+ SC, $\alpha=1$ & 0.8031 & 483.28s\\
+ SC, $\alpha=2$ & 0.7945 & 187.69s\\
+ SC, $\alpha=8$ & 0.7842 & 30.23s\\
+ \hline
+\end{tabular}
+\caption{Accuracy and running time of $k$-means and spectral clustering settings on Musk dataset}
+\label{table_musk}
+\end{table}
+
+\begin{figure}
+\centering
+\includegraphics[height=6cm]{mt.png}
+\caption{Running time of different optimizations on Musk dataset}
+\label{figure_musk_time}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[height=6cm]{ma.png}
+\caption{Accuracy of different optimizations on Musk dataset}
+\label{figure_musk_accu}
+\end{figure}
+
+\subsection{Large data set}
 This data set contains the weighted census data extracted from 1994 ~ 1995 Current Population Survey conducted by U.S Census Bureau. It has 299,285 training instances and 37 attributes. Typical features include age, occupation, hourly wage, sex, etc. We pre-cleaned the data by removing all the rows with missing values and zero mean + normalized the data. All the data has been labeled based on the income of 50k. The objective was to clustering the training set into two parts, and predicted the income level of points from test set. We measured the performance by the prediction accuracy.
 We present the result and run time in the following table and chart.
 
+\begin{table}
+\centering
+\begin{tabular}{|c|cc|}
+\hline
+Algorithm & Accuracy & Time \\
+\hline
+ $k$-means & 0.6325 & 10.50s\\
+ SC, $\alpha=500$ & 0.9170 & 141.79s\\
+ \hline
+\end{tabular}
+\caption{Accuracy and running time of $k$-means and spectral clustering settings on USCI dataset}
+\label{table_usci}
+\end{table}
+
+\begin{figure}
+\centering
+\includegraphics[height=6cm]{ut.png}
+\caption{Running time of different optimizations on USCI dataset}
+\label{figure_musk_time}
+\end{figure}
+
+\begin{figure}
+\centering
+\includegraphics[height=6cm]{ua.png}
+\caption{Accuracy of different optimizations on USCI dataset}
+\label{figure_musk_accu}
+\end{figure}
 
 \section{Conclusion and future work}
 
@@ -231,51 +263,7 @@ There are lots of potential extension to the project. For example, we could try 
 %
 %APPENDICES are optional
 %\balancecolumns
-\appendix
-%Appendix A
-\section{Headings in Appendices}
-The rules about hierarchical headings discussed above for
-the body of the article are different in the appendices.
-In the \textbf{appendix} environment, the command
-\textbf{section} is used to
-indicate the start of each Appendix, with alphabetic order
-designation (i.e. the first is A, the second B, etc.) and
-a title (if you include one).  So, if you need
-hierarchical structure
-\textit{within} an Appendix, start with \textbf{subsection} as the
-highest level. Here is an outline of the body of this
-document in Appendix-appropriate form:
-\subsection{Introduction}
-\subsection{The Body of the Paper}
-\subsubsection{Type Changes and  Special Characters}
-\subsubsection{Math Equations}
-\paragraph{Inline (In-text) Equations}
-\paragraph{Display Equations}
-\subsubsection{Citations}
-\subsubsection{Tables}
-\subsubsection{Figures}
-\subsubsection{Theorem-like Constructs}
-\subsubsection*{A Caveat for the \TeX\ Expert}
-\subsection{Conclusions}
-\subsection{Acknowledgments}
-\subsection{Additional Authors}
-This section is inserted by \LaTeX; you do not insert it.
-You just add the names and information in the
-\texttt{{\char'134}additionalauthors} command at the start
-of the document.
-\subsection{References}
-Generated by bibtex from your ~.bib file.  Run latex,
-then bibtex, then latex twice (to resolve references)
-to create the ~.bbl file.  Insert that ~.bbl file into
-the .tex source file and comment out
-the command \texttt{{\char'134}thebibliography}.
-% This next section command marks the start of
-% Appendix B, and does not continue the present hierarchy
-\section{More Help for the Hardy}
-The acm\_proc\_article-sp document class file itself is chock-full of succinct
-and helpful comments.  If you consider yourself a moderately
-experienced to expert user of \LaTeX, you may find reading
-it useful but please remember not to change it.
+
 \balancecolumns
 % That's all folks!
 \end{document}
