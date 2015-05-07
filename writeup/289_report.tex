@@ -98,7 +98,7 @@ Yaohui Ye\\
 
 \maketitle
 \begin{abstract}
-Clustering is one of the most popular techniques adopted in industry and research area to detect group structure in the data set.  K-Means and Spectral Clustering are two typical algorithms for grouping similar subset of data in a large data set. K-Means is simple and fast, but depends heavily on the initialization and is likely to stuck on the local optimal points. Spectral clustering often outperforms K-Means result by using eigenvectors of the similarity matrix. However, it’s computationally expensive and the simple implementation has a serious memory bottleneck. In order to gain some insights into the performance of these clustering methods, in this report we experienced with K-Means and Spectral clustering on Musk(xxx) dataset and compared clustering results. Moreover, we tried different optimizations and measured  how much they improve the clustering performance. For K-Means, we tried smart initialization techniques such as KM-2 and BF. For Spectral Clustering, we applied subsampling at the beginning to group data points by a distortion minimizing transformation, and conducted Spectral Clustering on the preprocessed data set. This optimization significantly reduce the time and memory needed by the algorithm while retaining comparable clustering accuracy.
+Clustering is one of the most popular techniques adopted in industry and research area to detect group structure in the data set.  K-Means and Spectral Clustering are two typical algorithms for grouping similar subset of data in a large data set. K-Means is simple and fast, but depends heavily on the initialization and is likely to stuck on the local optimal points. Spectral clustering often outperforms K-Means result by using eigenvectors of the similarity matrix. However, it’s computationally expensive and the simple implementation has a serious memory bottleneck. In order to gain some insights into the performance of these clustering methods, in this report we experienced with K-Means and Spectral clustering on Musk and USCI dataset~\cite{Lichman:2013} and compared clustering results. Moreover, we tried different optimizations and measured  how much they improve the clustering performance. For K-Means, we tried smart initialization techniques such as KM-2 and BF. For Spectral Clustering, we applied subsampling at the beginning to group data points by a distortion minimizing transformation, and conducted Spectral Clustering on the preprocessed data set. This optimization significantly reduce the time and memory needed by the algorithm while retaining comparable clustering accuracy.
 \end{abstract}
 
 % A category with the (minimum) three required fields
@@ -173,6 +173,35 @@ In this sector we present the dataset we tested on and the results from running 
 
 During evaluation, we used two data sets. One big and one small.
 \\
+
+\begin{table*}
+\centering
+\begin{tabular}{|c|ccccccc|}
+\hline
+ & Basic $k$-means & KM-1 & KM-2 & BF & SC, $\alpha=1$ & SC, $\alpha=2$ & SC, $\alpha=8$ \\
+ \hline
+ Accuracy & 0.5399 & 0.5520 & 0.5520 & 0.5705 & 0.8031 & 0.7945 & 0.7842 \\
+ Running Time & 0.94s & 14.76s & 1.67s & 2.81s & 483.28s & 187.69s & 30.23s\\
+ \hline
+\end{tabular}
+\caption{Accuracy and running time of $k$-means and spectral clustering settings on Musk dataset}
+\label{table_musk}
+\end{table*}
+
+\begin{table*}
+\centering
+\begin{tabular}{|c|ccccc|}
+\hline
+ & Basic $k$-means & KM-1 & KM-2 & BF & SC, $\alpha=500$ \\
+ \hline
+ Accuracy & 0.6325 & 0.6523 & 0.6623 & 0.6721 & 0.9170 \\
+ Running Time & 10.50s & 162.93s & 20.53s & 25.32s & 141.79s\\
+ \hline
+\end{tabular}
+\caption{Accuracy and running time of $k$-means and spectral clustering settings on USCI dataset}
+\label{table_usci}
+\end{table*}
+
 \subsection{Small data set}
 We used the Musk dataset from UCI, the machine learning repository. In short, it consists of different conformations from a set of 109 molecules which are either musks or non-musks. It’s a labeled dataset with 6598 instances and 166 features. Most features are “distance feature” along rays.
 The objective is to clustering all the musk conformations and all the non-musks conformations. This many-to-one relationship between feature vectors and molecules is called the "multiple instance problem", and clustering algorithm can be turned into a classifier. In this dataset, we measured the performance based on the accuracy that the algorithm correctly labeled all the points.
