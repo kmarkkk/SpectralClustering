@@ -211,6 +211,10 @@ Algorithm & Accuracy & Time \\
 This data set contains the weighted census data extracted from 1994-1995 Current Population Survey conducted by U.S Census Bureau~\cite{Lichman:2013}. It has 299,285 training instances and 37 attributes. Typical features include age, occupation, hourly wage, sex, etc. We pre-cleaned the data by removing all the rows with missing values and zero mean + normalized the data. All the data has been labeled based on the income criteria of 50k. The objective was to cluster the training set into two parts, and predicted the income level of points from test set. We measured the performance by the prediction accuracy.
 We present the result and run time in the following table and chart.
 
+\subsection{Results}
+In table~\ref{table_musk} we show the accuracy and run time of different clustering algorithms on the Musk dataset. In figure~\ref{figure_musk_time} we show the run time bar plot of those algorithms and in figure~\ref{figure_musk_accu} we show the accuracy plot. For Spectral Clustering, we tried the simple implementation, and the optimized implementation with downsampling ratio $\alpha=2$ and $\alpha=8$. We could see that overall Spectral Clustering has a higher accuracy than $k$-Means, but is really slow to run. We found that doing the downsampling decreased the accuracy for a little bit, but saved us a lot of memory and time.\\
+In table~\ref{table_usci} we show the accuracy and run time of different clustering algorithms on the USCI dataset. In figure~\ref{figure_usci_time} we show the run time bar plot of those algorithms and in figure~\ref{figure_usci_accu} we show the accuracy plot. Since the dataset is huge and it could take days to run the basic Spectral Clustering algorithm, we chose a big downsampling ratio of $\alpha = 500$. The Spectral Clustering is still significantly slower than $k$-means, but gets 0.917 accuracy compared to the 0.6325 from $k$-means.
+
 \begin{table}
 \centering
 \begin{tabular}{|c|cc|}
@@ -229,14 +233,14 @@ Algorithm & Accuracy & Time \\
 \centering
 \includegraphics[height=6cm]{ut.png}
 \caption{Running time of different optimizations on USCI dataset}
-\label{figure_musk_time}
+\label{figure_usci_time}
 \end{figure}
 
 \begin{figure}
 \centering
 \includegraphics[height=6cm]{ua.png}
 \caption{Accuracy of different optimizations on USCI dataset}
-\label{figure_musk_accu}
+\label{figure_usci_accu}
 \end{figure}
 
 \section{Conclusion and future work}
