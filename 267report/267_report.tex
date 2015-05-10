@@ -238,12 +238,34 @@ During evaluation, we used MNIST digit image dataset from UCI~\cite{Lichman:2013
 \end{figure}
 
 \subsection{Environment}
-We set up a Spark cluster of 8 nodes on Amazon Spot instances. One of these nodes is the Master node, which manages the tasks and other seven are Worker nodes, which are actually processes/processors that run computations and store data for the application.
+We set up a Spark cluster of 8 nodes on Amazon Spot instances. One of these nodes is the Master node, which manages the tasks. The other 7 nodes are Workers, which are actually processes/processors that run computations and store data for the application. The spot instances we rent were R3.xlarge High Frequency Intel Xeon E5-2670 v2 (Ivy Bridge) Processors~\cite{spotinstance}, with 4 VCPU each and 27 GB of RAM. 
 
 \subsection{Results}
 We run our parallelized program with different number of workers, ranging from 1 to 7.
 
-The speedup plot for the first part of the optimization, Laplacian matrix construction, is shown in Figure~\ref{lm_speedup} and the corresponding time plot is shown in Figure~\ref{lm_time}.
+\subsubsection{Parallel Laplacian Matrix Construction}
+In table~\cite{table_lap}, we show the running time and speedup of different clustering algorithms on the MNIST digit dataset. In Figure~\ref{lm_time} we show the running time plot on different number of nodes and in Figure~\ref{lm_speedup} we show the speedup plot. We could observe that the matrix construction is expansive on a single node, and we gained around 5.3 speedup when processing on 7 nodes.
+
+
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+Nodes & Run time & Speedup \\
+\hline
+ 1  & 1626.77s & - \\
+ 2 & 856.19s & 1.9\\
+ 3 & 580.99s & 2.8 \\
+ 4 & 464.79s & 3.5\\
+ 5 & 396.77s & 4.1\\
+ 6 & 346.12s & 4.7\\
+ 7 & 306.93s & 5.3\\
+ \hline
+\end{tabular}
+\caption{Running time and Speedup of parallel Laplacian Matrix Construction on Spark}
+\label{table_lap}
+\end{table}
+
 \begin{figure}[ht]
 \centering
 \includegraphics[height=6cm]{ms.png}
@@ -258,7 +280,7 @@ The speedup plot for the first part of the optimization, Laplacian matrix constr
 \label{lm_time}
 \end{figure}
 
-The speedup plot for the second part of the optimization, $k$-means clustering, is shown in Figure~\ref{km_speedup} and the corresponding time plot is shown in Figure~\ref{km_time}.
+
 
 \begin{figure}[ht]
 \centering
@@ -274,8 +296,32 @@ The speedup plot for the second part of the optimization, $k$-means clustering, 
 \label{km_time}
 \end{figure}
 
+\subsubsection{Parallel $k$-means}
+The speedup plot for the second part of the optimization, $k$-means clustering, is shown in Figure~\ref{km_speedup} and the corresponding time plot is shown in Figure~\ref{km_time}. (Add more shit here)
 
-Figure~\ref{visual_centroids} shows the visualization of the cluster centroids obtained from our spectral clustering algorithm.
+\begin{table}[h]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+Nodes & Run time & Speedup \\
+\hline
+ 1  & 27.34s & - \\
+ 2 & 21.19s & 1.9\\
+ 3 & 15.83s & 2.8 \\
+ 4 & 14.12s & 3.5\\
+ 5 & 13.51s & 4.1\\
+ 6 & 12.07s & 4.7\\
+ 7 & 306.93s & 5.3\\
+ \hline
+\end{tabular}
+\caption{Running time and Speedup of parallel k-means on Spark}
+\label{table_kmeans}
+\end{table}
+
+
+\subsection{Centroids visualization}
+Figure~\ref{visual_centroids} shows the visualization of the cluster centroids obtained from our Spectral Clustering algorithm, which successfully separated the boundry between different digit images.
+
 \begin{figure}[ht]
 \centering
 \includegraphics[height=3.2cm]{scdigits.png}
@@ -284,7 +330,7 @@ Figure~\ref{visual_centroids} shows the visualization of the cluster centroids o
 \end{figure}
 
 \section{Future Work}
-Currently we are using Eucledian distance in the affinity matrix. It provides a symmetric estimation of similarity, but is not the only choice for the distance metric. Other similarity metrics, such as Gaussian Kernel (xxx), can be used to smooth the affinity estimation. Gaussian Kernel is defined as $$K(x, y) = \frac{|x - y|}{2\sigma^2}$$ $\sigma$ is a tunable parameters and it plays the role of smoothing the discision boundary. Adding the kernel could give us more complicated affinity metric and improve the performance.
+Currently we are using Eucledian distance in the affinity matrix. It provides a symmetric estimation of similarity, but is not the only choice for the distance metric. Other similarity metrics, such as Gaussian Kernel~\cite{keerthi2003asymptotic}, can be used to smooth the affinity estimation. Gaussian Kernel is defined as $$K(x, y) = \frac{|x - y|}{2\sigma^2}$$ $\sigma$ is a tunable parameters and it plays the role of smoothing the discision boundary. Adding the kernel could give us more complicated affinity metric and improve the performance.
 
 For the eigenvector decomposition, we simply used the unnomarlized Laplacian Matrix $L = D - W$. Acturally, there exists other versions of the normalized Lapacian Matrix such as $L_{sym} = D^{-1/2}LD^{-1/2}$ and $L_{rw} = D^{-1}L$. As described by their names, $L_{sym}$ is a symmetric matrix, and $L_{rw}$ is closely related to random walk. The normalzied Laplacian matrix has some extra properties compared to unormalized one. Adding a distributed matrix multiplcation into our Spectral Clustering algorithm could help us explore these properties and see the influence on the final result.
 
