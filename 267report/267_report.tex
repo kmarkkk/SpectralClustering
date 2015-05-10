@@ -165,7 +165,7 @@ In our project, we chose the second solution. In theory, the smaller the $k$, th
 
 In order to speedup the slow eigenvector decomposition, we adopted the idea from Michael Jordan's paper Fast Approximate Spectral Clustering ~\cite{yan2009fast} to do a downsampling at the beginning to significantly reduce the size of the affinity matrix. Basically, after choosing a sampling ratio $\alpha$, we first did a fast $k$-means on the data set to find $m = \alpha n$ centroids $y_1, y_2, \cdots, y_m$. Then, each $x_i$ will be represented by the centroid closest to it. Then we would perform the Spectral Clustering on $y_1, y_2, \cdots, y_m$, and recover the cluster membership for each $x_i$ by looking up the cluster membership of the corresponding $y$ centroid. This optimization turned out to work well, with a little drop in accuracy because we lost some information during the downsampling. Besides that, it significantly reduced the time and memory usage of the Spectral Clustering algorithm.
 
-\subsection{K-means}
+\subsection{$k$-means}
 $k$-means is one of the most common clustering techniques. It aims at partitioning $n$ observations into $k$ clusters. The first step of this algorithm is to randomly choose $k$ points from the dataset as our initial cluster centroids. The second step is to take each point of the dataset and associate it to its nearest centroid. The third step is re-calculating the centroids for each cluster that we get from last step by taking the means of all points within that cluster. After calculating the $k$ new centroids, we calculate the new binding of each point and its nearest new centroid and start a new iteration from the second step. The algorithm stops when all centroids stop moving.
 
 The accuracy of $k$-means is highly dependent on the initialization method, since if the initial centroids aren't well selected, the algorithm could be stuck on local optimum. Various approaches for selecting initial centroids have been proposed~\cite{kanungo2002efficient, arthur2007k, khan2004cluster}, and for our project, we used three different initialization methods, KM-1~\cite{hartigan1979algorithm}, KM-2~\cite{yan2009fast} and BF~\cite{bradley1998refining}, which will be described in following parts.
@@ -218,17 +218,19 @@ Hosted under Apache Open Source Licence, Spark is a fast and general-purpose clu
 We chose Spark to be our parallelization tool for a couple of reasons. On the one hand, a lot of machine learning problems require iterative processing over training set to learn the best parameters, which typically applies the same function repeatedly. Traditional Map/Reduce framework saves the intermediate results onto disks and reads them back later if needed, which incurs unnecessary IO overhead. Spark, using fast in-memory cache for those intermediate values, avoids the performance penalty of data reload and speeds up the entire training process~\cite{zaharia2010spark}. On the other hand, we want to take the opportunity to experiment with this state-of-the-art technique and learn about how it works.
 
 \begin{figure}[h]
-\includegraphics[height=4.2cm]{spark_architecture.png}
+\includegraphics[height=4.1cm]{spark_architecture.png}
 \caption{Spark Architecture~\cite{sparkoverview}}
 \label{spark_arch}
 \end{figure}
 
-Figure~\ref{spark_arch} shows the architecture of a Spark system. Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in the main program~\cite{sparkoverview}. Spark uses a Master-Slave model, where the master node stores the SparkContext object and worker nodes (Slave) 
+Figure~\ref{spark_arch} shows the architecture of a Spark system. Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in the main program~\cite{sparkoverview}. Spark uses a Master-Slave model, where the master node stores the SparkContext object and worker nodes (i.e., slave) are responsible for running computations and storing data for the application. When we want to run a Spark task, we can just submit it to the master node, and the SparkContext will send the tasks for the workers to run.
+
+The most essential abstraction introduced by Spark is resilient distributed datasets (RDD), which is a collection of objects partitioned across different machines that enables Spark to perform efficient in-memory computation for iterative and interactive algorithms, which helped us a lot when running the experiments.
 
 \section{Evaluation}
-In this sector we present the dataset we tested on and the results from running different clustering algorithms.
+In this sector we present the dataset we tested on and the results from running different clustering algorithms with different numbers of computing nodes.
 
-During evaluation, we used MNIST digit image dataset from UCI~\cite{Lichman:2013}. In short, it consists of hand-written digit images in grey scale. Each image is 28 * 28 so we have 784 dimensions in total. Particularly, each dimension is a pixel of grey scale between 0 and 255. The 10,000 images we picked contains all digits from 0 to 9. Figure~\ref{visual_digits} gives the visualization of random images of different digits.
+During evaluation, we used MNIST digit image dataset from \cite{mnistdigit}. In short, it consists of hand-written digit images in grey scale. Each image is 28 * 28, so we have 784 dimensions in total. Particularly, each dimension is a pixel of grey scale between 0 and 255. The 10,000 images we picked contains all digits from 0 to 9. Figure~\ref{visual_digits} gives the visualization of random images of different digits.
 
 \begin{figure}[h]
 \centering
@@ -238,22 +240,21 @@ During evaluation, we used MNIST digit image dataset from UCI~\cite{Lichman:2013
 \end{figure}
 
 \subsection{Environment}
-We set up a Spark cluster of 8 nodes on Amazon Spot instances. One of these nodes is the Master node, which manages the tasks. The other 7 nodes are Workers, which are actually processes/processors that run computations and store data for the application. The spot instances we rent were R3.xlarge High Frequency Intel Xeon E5-2670 v2 (Ivy Bridge) Processors~\cite{spotinstance}, with 4 VCPU each and 27 GB of RAM. 
+We set up a Spark cluster of 8 nodes on Amazon Spot instances. One of these nodes is the Master node, which manages the tasks. The other 7 nodes are Workers, which are actually processes/processors that run computations and store data for the application. The spot instances we rent were R3.xlarge High Frequency Intel Xeon E5-2670 v2 (Ivy Bridge) Processors~\cite{spotinstance}, each of which has 4 VCPU and 27 GB of RAM. 
 
 \subsection{Results}
 We run our parallelized program with different number of workers, ranging from 1 to 7.
 
 \subsubsection{Parallel Laplacian Matrix Construction}
-In table~\cite{table_lap}, we show the running time and speedup of different clustering algorithms on the MNIST digit dataset. In Figure~\ref{lm_time} we show the running time plot on different number of nodes and in Figure~\ref{lm_speedup} we show the speedup plot. We could observe that the matrix construction is expansive on a single node, and we gained around 5.3 speedup when processing on 7 nodes.
-
+In Table~\ref{table_lap}, we show the running time and speedup of the matrix construction with different node numbers on the MNIST digit dataset. In Figure~\ref{lm_time} we show the running time plot on different number of nodes and in Figure~\ref{lm_speedup} we show the speedup plot. We could observe that the matrix construction is expensive on a single node, and we gained around 5.3x speedup when processing on 7 nodes.
 
 \begin{table}[h]
 \centering
 \begin{tabular}{|c|c|c|}
 \hline
-Nodes & Run time & Speedup \\
+Nodes & Running time & Speedup \\
 \hline
- 1  & 1626.77s & - \\
+ 1 & 1626.77s & - \\
  2 & 856.19s & 1.9\\
  3 & 580.99s & 2.8 \\
  4 & 464.79s & 3.5\\
@@ -280,43 +281,41 @@ Nodes & Run time & Speedup \\
 \label{lm_time}
 \end{figure}
 
+\subsubsection{Parallel $k$-means}
+Table~\ref{table_kmeans} shows the running time and speedup of $k$-means clustering algorithm with different numbers of worker nodes. The speedup plot for the second part of the optimization, $k$-means clustering, is shown in Figure~\ref{km_speedup} and the corresponding time plot is shown in Figure~\ref{km_time}. We gained around 2.5x speedup of the algorithm with 7 nodes. Even though the speedup is still almost linear to the number of nodes, comparing with last experiment, it's actually further from the ideal speedup. We used our own $k$-means implementation, instead of using the MLlib one, thus it's possible that we failed to fully exploit the ability of Spark clusters.
 
+\begin{table}[htb]
+\centering
+\begin{tabular}{|c|c|c|}
+\hline
+Nodes & Running time & Speedup \\
+\hline
+ 1 & 27.35s & - \\
+ 2 & 21.20s & 1.3\\
+ 3 & 15.83s & 1.7 \\
+ 4 & 14.12s & 1.9\\
+ 5 & 13.52s & 2.0\\
+ 6 & 12.08s & 2.3\\
+ 7 & 11.00s & 2.5\\
+ \hline
+\end{tabular}
+\caption{Running time and Speedup of parallel $k$-means on Spark}
+\label{table_kmeans}
+\end{table}
 
-\begin{figure}[ht]
+\begin{figure}[htb]
 \centering
 \includegraphics[height=6cm]{ks.png}
 \caption{$k$-means convergence speedup vs number of nodes}
 \label{km_speedup}
 \end{figure}
 
-\begin{figure}[ht]
+\begin{figure}[htb]
 \centering
 \includegraphics[height=6cm]{kt.png}
 \caption{$k$-means convergence time vs number of nodes}
 \label{km_time}
 \end{figure}
-
-\subsubsection{Parallel $k$-means}
-The speedup plot for the second part of the optimization, $k$-means clustering, is shown in Figure~\ref{km_speedup} and the corresponding time plot is shown in Figure~\ref{km_time}. (Add more shit here)
-
-\begin{table}[h]
-\centering
-\begin{tabular}{|c|c|c|}
-\hline
-Nodes & Run time & Speedup \\
-\hline
- 1  & 27.34s & - \\
- 2 & 21.19s & 1.9\\
- 3 & 15.83s & 2.8 \\
- 4 & 14.12s & 3.5\\
- 5 & 13.51s & 4.1\\
- 6 & 12.07s & 4.7\\
- 7 & 306.93s & 5.3\\
- \hline
-\end{tabular}
-\caption{Running time and Speedup of parallel k-means on Spark}
-\label{table_kmeans}
-\end{table}
 
 
 \subsection{Centroids visualization}
