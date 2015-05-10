@@ -222,13 +222,60 @@ Hosted under Apache Open Source Licence, Spark is a fast and general-purpose clu
 \section{Evaluation}
 In this sector we present the dataset we tested on and the results from running different clustering algorithms.
 
-During evaluation, we used MNIST digit image dataset from UCI~\cite{Lichman:2013}. In short, it consists of hand-written digit images in grey scale. Each image is 28 * 28 so we have 784 dimensions in total. Particularly, each dimension is a pixel of grey scale between 0 and 255. The 10,000 images we picked contains all digits from 0 to 9. Figure gives the visualization of a random image.
+During evaluation, we used MNIST digit image dataset from UCI~\cite{Lichman:2013}. In short, it consists of hand-written digit images in grey scale. Each image is 28 * 28 so we have 784 dimensions in total. Particularly, each dimension is a pixel of grey scale between 0 and 255. The 10,000 images we picked contains all digits from 0 to 9. Figure~\ref{visual_digits} gives the visualization of random images of different digits.
+
+\begin{figure}[h]
+\centering
+\includegraphics[height=3.2cm]{digits.png}
+\caption{Visualization of digit images}
+\label{visual_digits}
+\end{figure}
 
 \subsection{Environment}
-We set up a Spark cluster of 8 nodes on Amazon Spot instances. One of these nodes is the Master node, which manages the tasks and other seven are Worker nodes, which are responsible for processing that run computations and store data for the application.
+We set up a Spark cluster of 8 nodes on Amazon Spot instances. One of these nodes is the Master node, which manages the tasks and other seven are Worker nodes, which are actually processes/processors that run computations and store data for the application.
 
 \subsection{Results}
 We run our parallelized program with different number of workers, ranging from 1 to 7.
+
+The speedup plot for the first part of the optimization, Laplacian matrix construction, is shown in Figure~\ref{lm_speedup} and the corresponding time plot is shown in Figure~\ref{lm_time}.
+\begin{figure}[ht]
+\centering
+\includegraphics[height=6cm]{ms.png}
+\caption{Laplacian matrix construction speedup vs number of nodes}
+\label{lm_speedup}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[height=6cm]{mt.png}
+\caption{Laplacian matrix construction time vs number of nodes}
+\label{lm_time}
+\end{figure}
+
+The speedup plot for the second part of the optimization, $k$-means clustering, is shown in Figure~\ref{km_speedup} and the corresponding time plot is shown in Figure~\ref{km_time}.
+
+\begin{figure}[ht]
+\centering
+\includegraphics[height=6cm]{ks.png}
+\caption{$k$-means convergence speedup vs number of nodes}
+\label{km_speedup}
+\end{figure}
+
+\begin{figure}[ht]
+\centering
+\includegraphics[height=6cm]{kt.png}
+\caption{$k$-means convergence time vs number of nodes}
+\label{km_time}
+\end{figure}
+
+
+Figure~\ref{visual_centroids} shows the visualization of the cluster centroids obtained from our spectral clustering algorithm.
+\begin{figure}[ht]
+\centering
+\includegraphics[height=3.2cm]{scdigits.png}
+\caption{Visualization of cluster centroids}
+\label{visual_centroids}
+\end{figure}
 
 \section{Future Work}
 Currently we are using Eucledian distance in the affinity matrix. It provides a symmetric estimation of similarity, but is not the only choice for the distance metric. Other similarity metrics, such as Gaussian Kernel (xxx), can be used to smooth the affinity estimation. Gaussian Kernel is defined as $$K(x, y) = \frac{|x - y|}{2\sigma^2}$$ $\sigma$ is a tunable parameters and it plays the role of smoothing the discision boundary. Adding the kernel could give us more complicated affinity metric and improve the performance.
