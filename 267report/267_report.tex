@@ -140,7 +140,7 @@ Written in pseudocode, it is shown in Algorithm~\ref{algorithm_sc}.
 \State Construct affinity matrix $W$ from data set $x_1, x_2, \cdots, x_n$
 \State Construct degree matrix $D$ from $W$
 \State $L \leftarrow D - W$
-\State Build $U \in R^{n*d}$ where the columns are the first $k$ eigenvectors of $L$ 
+\State Build $U \in R^{n \times d}$ where the columns are the first $k$ eigenvectors of $L$ 
 \State Use the $i^{th}$ row $U_i$ of $U$ to represent $x_i$, do $k$-means clusterings on $U_1, U_2, \cdots, U_n$
 \end{algorithmic}
 \label{algorithm_sc}
@@ -193,7 +193,7 @@ In order to take the top 500 neighbours for a data point, the simplest solution 
 we cached the value of $|x_i||^2$ and $||x_j||^2$ and reuse them later. It gave us a much better $O(d)$ runtime. 
 
 Since $k$ nearest neighobur is not a symmetric relationship, the affinity matrix we constructed is not going to be symmetric, which causes problem when passing to the sparse eigensolver later. We added a simple fix there that we copy each entry to its symmetric position in the matrix. After we computed the affinity matrix $W$, we constructed the diagnoal degree matrix $D$ and Laplacian matrix $L$ as 
-$$ D_{ii} = \sum_j=1^nW_{ij}$$
+$$ D_{ii} = \sum_{j=1}^nW_{ij}$$
 $$ L = D - W$$
 
 \subsection{Eigenvector Decomposition}
