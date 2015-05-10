@@ -121,11 +121,12 @@ Clustering is one of the most widely used techniques for exploratory data analys
 clustering algorithm which is easy to implement. However, as we have worked with $k$-means over time, the simplest method doesn't always give the best clustering result. The performance of $k$-means can vary significantly depending on the initialization method. A lot of optimization techniques exist to solve this problem. For example, Hartigan proposed to run $k$-means for multiple time with random initializations and pick the best result~\cite{hartigan1979algorithm}. Sampling-based KM-2~\cite{yan2009fast} suggests to break the $k$-means into two steps. Before doing $k$-means on the entire data set, it would first run a quick $k$-means on a subset of data to pre-selected initialization centroids. 
 
 While $k$-means provides reasonable clustering performance on most problems, 
-Spectral Clustering, one of the most popular modern clustering algorithms, outperforms the traditional clustering algorithms such as $k$-means in finding group structure. The reason is that traditional K-means clustering only considers distances to cluster centroids, but Spectral Clustering utilizes the eigenvalues of the affinity matrix to perform dimensionality reduction and works with distance between all pairs of points. Spectral clustering has good performance on small data set but limited applicability to large-scale problems due to its computational complexity $O(n^3)$ in general, with $n$ data points. The reason is simple. Spectral Clustering requires to compute the similarity matrix of all data points, which is a $n$ by $n$ matrix. After that, doing the eigenvector decomposition is an operation of 
+Spectral Clustering, one of the most popular modern clustering algorithms, outperforms the traditional clustering algorithms such as $k$-means in finding group structure. The reason is that traditional $k$-means clustering only considers distances to cluster centroids, but Spectral Clustering utilizes the eigenvalues of the affinity matrix to perform dimensionality reduction and works with distance between all pairs of points. Spectral clustering has good performance on small data set but limited applicability to large-scale problems due to its computational complexity $O(n^3)$ in general, with $n$ data points. The reason is simple. Spectral Clustering requires to compute the similarity matrix of all data points, which is a $n$ by $n$ matrix. After that, doing the eigenvector decomposition is an operation of 
 $O(n^3)$ complexity. This cubic runtime makes the algorithm prohibitively expensive on dataset of million level. In this project, we first implemented the basic Spectral Clustering algorithm. After that, we tried to run the algorithm in parallel on Spark to speedup runtime on large dataset. Morerover, we adopted the optimization technique from paper Fast Approximate Spectral Clustering \cite{yan2009fast} to speedup our Spectral Clustering. Given the complexity of the algorithm, it will be time-consuming to run on the large real world dataset. Taking usage of the parallelism and algorithmic optmization would allow us to train efficiently on more data and improve the result. Actually, we got comparable accuracy and faster runtime after applying all techniques. The remainder of the report is organized as follows. In Section 2, we will introduce the details of Speactral Clustering. In section 3, we decribe the ways that we parallelize different stages of Spark. In setion 4, we give an overview of Spark and our architecture. In section 6,  we evaluate our performances on testing set. We present the future work in section 7 and conclusion in Section 8.
 %ACKNOWLEDGMENTS are optional
 
-\section{Spectral Clustering}
+\section{Basic Clustering Algorithms}
+\subsection{Spectral Clustering}
 The goal of Spectral Clustering is to partition the data into k disjoint classes such that each point will be assigned to a single class. A good partition would break the data into several loosely connected components, while similarity within the component is high.
 
 Basically, the Spectral Clustering is a flexible class of clustering procedures, which makes usage of the eigenvalue of the similarity matrix of the input data to perform dimensionality reduction before clustering in lower dimensions. Employing the eigenvector decomposition, Spectral Clustering is able to beat $k$-means when detecting group structures in data.
@@ -145,7 +146,7 @@ Written in pseudocode, it is shown in Algorithm~\ref{algorithm_sc}.
 \label{algorithm_sc}
 \end{algorithm}
 
-\subsection{Bottleneck}
+\subsubsection{Bottleneck}
 It can proved be proved that mathematically Spectral Clustering solves the Ncut problem. The algorithm is not hard to code, but there are two serious problems with the naive implementations.
 \begin{enumerate}
 \item{The memory overhead. Like PCA, spectral clustering takes usage of the spectrum of the affinity matrix to project data points into lower dimensions. Constructing affinity matrix on a single node requires $O(n^2)$ computation since it needs to process over all pairs of points. Consequently, we need to store the affinity matrix, which takes $O(n^2)$ space. Storing a dense matrix on a single machine RAM becomes impossible when $n$ goes to level of 100k. Using 32 bit integer, storing such an affinity matrix takes $(100,000^2) * 4 \textnormal{B} = 40 \textnormal{G}$ memory.
@@ -153,7 +154,7 @@ It can proved be proved that mathematically Spectral Clustering solves the Ncut 
 \item{The time complexity of Spectral Clustering is $O(n^3)$, which comes from the requirement to perform eigenvector decomposition on the $O(n^2)$ affinity matrix. To give the reader a quantified idea of this time lower bound, we ran the simple Spectral Clustering on the 10,000 images from MNIST digit dataset~\cite{Lichman:2013}. It took more than 30 minutes to do the eigenvector decomposition using the numpy library. Thus, Spectral Clustering is computationally expensive for large datasets, which limits its application to large-scale problems.}
 \end{enumerate}
 
-\subsection{Solution}
+\subsubsection{Solution}
 For the memory overhead, a lot of solutions exist to handle the memory bottleneck. Three typical ideas are
 \begin{enumerate}
 \item{Zero out $W_{ij}$ if it is smaller than a certain threshold $\epsilon$}
@@ -163,6 +164,18 @@ For the memory overhead, a lot of solutions exist to handle the memory bottlenec
 In our project, we chose the second solution. In theory, the smaller the $k$, the worse the result because we throw away more info. $k$ in $k$-nn is a tunable parameter, and we picked 500 which both fitted the memory of our machine and gave a good performance. 
 
 In order to speedup the slow eigenvector decomposition, we adopted the idea from Michael Jordan's paper Fast Approximate Spectral Clustering ~\cite{yan2009fast} to do a downsampling at the beginning to significantly reduce the size of the affinity matrix. Basically, after choosing a sampling ratio $\alpha$, we first did a fast $k$-means on the data set to find $m = \alpha n$ centroids $y_1, y_2, \cdots, y_m$. Then, each $x_i$ will be represented by the centroid closest to it. Then we would perform the Spectral Clustering on $y_1, y_2, \cdots, y_m$, and recover the cluster membership for each $x_i$ by looking up the cluster membership of the corresponding $y$ centroid. This optimization turned out to work well, with a little drop in accuracy because we lost some information during the downsampling. Besides that, it significantly reduced the time and memory usage of the Spectral Clustering algorithm.
+
+\subsection{K-means}
+$k$-means is one of the most common clustering techniques. It aims at partitioning $n$ observations into $k$ clusters. The first step of this algorithm is to randomly choose $k$ points from the dataset as our initial cluster centroids. The second step is to take each point of the dataset and associate it to its nearest centroid. The third step is re-calculating the centroids for each cluster that we get from last step by taking the means of all points within that cluster. After calculating the $k$ new centroids, we calculate the new binding of each point and its nearest new centroid and start a new iteration from the second step. The algorithm stops when all centroids stop moving.
+
+The accuracy of $k$-means is highly dependent on the initialization method, since if the initial centroids aren't well selected, the algorithm could be stuck on local optimum. Various approaches for selecting initial centroids have been proposed~\cite{kanungo2002efficient, arthur2007k, khan2004cluster}, and for our project, we used three different initialization methods, KM-1~\cite{hartigan1979algorithm}, KM-2~\cite{yan2009fast} and BF~\cite{bradley1998refining}, which will be described in following parts.
+
+\subsubsection{Optimization - KM-1}
+The first optimization is to simply run the algorithm for several times. For each time, we use randomly initialized centroids and calculate the accuracy after convergence. After repeating these runs, we choose the one with the highest accuracy as our final result.
+\subsubsection{Optimization - KM-2}
+KM-2 is the second optimization, which consists of two stages of $k$-means. During the first stage, we sample a fraction of the data uniformly at random and run $k$-means with $k$ clusters on the sampled data. The second stage uses the centroids obtained from the first stage as the initial centroids and run $k$-means. Basically, the idea is to obtain good initial centroids so that fewer iterations and restarts are needed for the second stage.
+\subsubsection{Optimization - BF}
+The Bradley and Fayyad algorithm (BF)~\cite{bradley1998refining} consists of three stages of $k$-means. At first, we run $k$-means on randomly selected subsets of the entire data set for several times. The output centroids of all individual runs form a new data set. In the second stage, we run $k$-means on the new data set and the obtained centroids are used as the initial cluster centers for the third stage of $k$-means.
 
 \section{Parallel Spectral Clustering}
 As we generalized Spectral Clustering into 3 steps: Laplacian Matrix Construction, Eigenvector Decomposition, $k$-means, we can use different method to parallelize each step.
@@ -192,7 +205,7 @@ However, transforming PARPACK onto Spark would not be an easy thing to do, so we
 
 
 \subsection{Parallel $k$-means}
-$k$-means is one of the most common clustering techniques. It aims at partitioning $n$ observations into $k$ clusters. The first step of this algorithm is to randomly choose $k$ points as our initial cluster centers. The second step is to take each point of the dataset and associate it to its nearest centroid. The third step is re-calculating the centroids for each cluster that we get from last step by taking the means of all points within that cluster. After calculating the $k$ new centroids, we calculate the new binding of each point and its nearest new centroid and start a new iteration from the second step. The algorithm stops when centroids stop moving.
+Once we get the first $k$ eigenvectors of the Laplacian matrix, we use $k$ means to process the matrix and each row of the matrix is regarded as one data point in the algorithm.
 
 To parallelize $k$-means clustering, we first need to randomly select cluster centers from all points and then distribute all data points to different machines. At this point, each machine has a portion of the whole data set and a copy of cluster centroids. During each iteration, a node only needs to compute the new centroids information with local data thus parallelizing the algorithm. The model is very similar to MPI model as mentioned in \cite{chen2011parallel}, but the implementation of parallelization in Spark is making communication easier than MPI.
 
