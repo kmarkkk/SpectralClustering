@@ -211,13 +211,19 @@ To parallelize $k$-means clustering, we first need to randomly select cluster ce
 
 
 \section{Spark Overview}
-Hosted under Apache Open Source Licence, Spark is a fast and general-purpose clustering computer system which efficiently schedules parallelled jobs into distributed computation nodes and utilizes the in-memory cache to reduce IO communication overhead incurred in traditional Map/Reduce frameworks such as Hadoop~\cite{zaharia2010spark}. We chose Spark to be our parallelization tool for a couple of reasons. On the one hand, a lot of machine learning problems require iterative processing over training set to learn the best parameters, which typically applies the same function repeatedly. Traditional Map/Reduce framework saves the intermediate results onto disks and reads them back later if needed, which incurs unnecessary IO overhead. Spark, using fast in-memory cache for those intermediate values, avoids the performance penalty of data reload and speeds up the entire training process~\cite{zaharia2010spark}.
+Map/Reduce was first presented by Google in 2002~\cite{dean2008mapreduce} and has been widely used for processing large data sets in a distributed environment. However, when writing our own MR programs in Hadoop or R, we found it difficult both because of the complicated configuration of the system and the inflexibility for different problems. We always need to build specialized systems for different use cases, which limits its applications. Specialized systems, including Pregel~\cite{malewicz2010pregel} and  GraphLab~\cite{low2014graphlab}, were built to deal with some of the limitations of traditional Map/Reduce.
+
+Hosted under Apache Open Source Licence, Spark is a fast and general-purpose clustering computer system which efficiently schedules parallelled jobs into distributed computation nodes and utilizes the in-memory cache to reduce IO communication overhead incurred in traditional Map/Reduce frameworks such as Hadoop~\cite{zaharia2010spark}. The goal of Spark is to generalize Map/Reduce to support new applications within the same engine. 
+
+We chose Spark to be our parallelization tool for a couple of reasons. On the one hand, a lot of machine learning problems require iterative processing over training set to learn the best parameters, which typically applies the same function repeatedly. Traditional Map/Reduce framework saves the intermediate results onto disks and reads them back later if needed, which incurs unnecessary IO overhead. Spark, using fast in-memory cache for those intermediate values, avoids the performance penalty of data reload and speeds up the entire training process~\cite{zaharia2010spark}. On the other hand, we want to take the opportunity to experiment with this state-of-the-art technique and learn about how it works.
 
 \begin{figure}[h]
 \includegraphics[height=4.2cm]{spark_architecture.png}
 \caption{Spark Architecture~\cite{sparkoverview}}
 \label{spark_arch}
 \end{figure}
+
+Figure~\ref{spark_arch} shows the architecture of a Spark system. Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in the main program~\cite{sparkoverview}. Spark uses a Master-Slave model, where the master node stores the SparkContext object and worker nodes (Slave) 
 
 \section{Evaluation}
 In this sector we present the dataset we tested on and the results from running different clustering algorithms.
@@ -282,7 +288,7 @@ Currently we are using Eucledian distance in the affinity matrix. It provides a 
 
 For the eigenvector decomposition, we simply used the unnomarlized Laplacian Matrix $L = D - W$. Acturally, there exists other versions of the normalized Lapacian Matrix such as $L_{sym} = D^{-1/2}LD^{-1/2}$ and $L_{rw} = D^{-1}L$. As described by their names, $L_{sym}$ is a symmetric matrix, and $L_{rw}$ is closely related to random walk. The normalzied Laplacian matrix has some extra properties compared to unormalized one. Adding a distributed matrix multiplcation into our Spectral Clustering algorithm could help us explore these properties and see the influence on the final result.
 
-Lastly, we could extend the project to apply parallel Spectral Clustering to other dataset such as bag-of-word~\cite{Lichman:2013} to cluster realted documents and compared results with other NLP models such as LDA~\cite{blei2003latent}.
+Lastly, we could extend the project by applying parallel Spectral Clustering to other datasets such as bag-of-word~\cite{Lichman:2013} to cluster realted documents and compared results with other NLP models such as LDA~\cite{blei2003latent}.
 
 \section{Conclusion}
 In this project we experienced with Spectral Clustering algorithm. We started from the basic version of algorithm and parallelized the process on Spark. In short, compared to $k$-means which provides a fast clustering centroids searching technique, Spectral Clustering often gives much better results but has memory and runtime bottleneck for large dataset. The memory bottleneck happens when cosntructing the affinity matrix. We showed that use k nearest neighbour could effectively reduce the memory overhead, and other solutions exist such as threshold pruning or Nystrom approximation. We successfullly parallelized the Spectral Clustering to get speedup on multiple nodes on Spark. In this project, we parallelzed each stage of the algorithm. In short, we used MapReduce to build the affinity matrix in parallel; for the eigenvector decomposition, we took advantage of the existing Spark mllib library, which internally used ARPACK for fast computation; we distributed the computations of $k$-means on multiple nodes to get a faster converge. We also learned a lot of Spark during the project. It provided us with a friendly interface for running distributed jobs, and a good abstraction and scheduling of parallel workloads.
